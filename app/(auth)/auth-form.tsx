@@ -18,6 +18,7 @@ export function AuthForm({ mode }: Props) {
   const next = search.get("next") ?? "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,10 +32,14 @@ export function AuthForm({ mode }: Props) {
     const supabase = createClient();
     try {
       if (mode === "signup") {
+        if (!fullName.trim()) {
+          throw new Error("Please enter your name.");
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
+            data: { full_name: fullName.trim() },
             emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
           },
         });
@@ -106,6 +111,21 @@ export function AuthForm({ mode }: Props) {
         <div className="flex-1 border-t border-border" />
       </div>
       <form onSubmit={handleEmailAuth} className="space-y-4">
+        {mode === "signup" && (
+          <div>
+            <Label htmlFor="fullName">Full name</Label>
+            <Input
+              id="fullName"
+              type="text"
+              autoComplete="name"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Jane Doe"
+              className="mt-1.5"
+            />
+          </div>
+        )}
         <div>
           <Label htmlFor="email">Email</Label>
           <Input

@@ -2,15 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Mic, Square } from "lucide-react";
+import { Loader2, Mic, Square, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
+import type { QuestionCategory } from "@/lib/types";
 
 interface Props {
   questionId: string;
   questionText: string;
   userId: string;
+  category: QuestionCategory;
 }
 
 interface Feedback {
@@ -20,9 +24,17 @@ interface Feedback {
   suggestion: string;
 }
 
-export function PracticeRecorder({ questionId, questionText, userId }: Props) {
+type Mode = "audio" | "text";
+
+export function PracticeRecorder({ questionId, questionText, userId, category }: Props) {
+  // System design questions need diagrams — text-first by default. Other
+  // categories default to audio (closer to a real interview).
+  const defaultMode: Mode = category === "system_design" ? "text" : "audio";
+  const [mode, setMode] = useState<Mode>(defaultMode);
+
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [textAnswer, setTextAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
@@ -39,7 +51,15 @@ export function PracticeRecorder({ questionId, questionText, userId }: Props) {
     };
   }, []);
 
-  async function start() {
+  function reset() {
+    setFeedback(null);
+    setTranscript(null);
+    setSeconds(0);
+    setTextAnswer("");
+    setError(null);
+  }
+
+  async function startRecording() {
     setError(null);
     setFeedback(null);
     setTranscript(null);
@@ -50,7 +70,7 @@ export function PracticeRecorder({ questionId, questionText, userId }: Props) {
       recorder.ondataavailable = (e) => {
         if (e.data.size) chunksRef.current.push(e.data);
       };
-      recorder.onstop = handleStop;
+      recorder.onstop = handleStopRecording;
       recorder.start();
       recorderRef.current = recorder;
       setRecording(true);
@@ -61,14 +81,14 @@ export function PracticeRecorder({ questionId, questionText, userId }: Props) {
     }
   }
 
-  function stop() {
+  function stopRecording() {
     recorderRef.current?.stop();
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
     setRecording(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
   }
 
-  async function handleStop() {
+  async function handleStopRecording() {
     setSubmitting(true);
     try {
       const blob = new Blob(chunksRef.current, { type: chunksRef.current[0]?.type ?? "audio/webm" });
@@ -80,24 +100,7 @@ export function PracticeRecorder({ questionId, questionText, userId }: Props) {
         .upload(path, blob, { contentType: blob.type });
       if (upErr) throw upErr;
 
-      const res = await fetch("/api/practice", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          question_id: questionId,
-          question_text: questionText,
-          storage_path: path,
-          duration_seconds: seconds,
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Grading failed");
-      }
-      const json = await res.json();
-      setFeedback(json.feedback);
-      setTranscript(json.transcript);
-      router.refresh();
+      await submit({ storage_path: path, duration_seconds: seconds, mode: "audio" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submission failed.");
     } finally {
@@ -105,35 +108,151 @@ export function PracticeRecorder({ questionId, questionText, userId }: Props) {
     }
   }
 
+  async function submitText() {
+    if (textAnswer.trim().length < 20) {
+      setError("Write a bit more — at least a couple of sentences.");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await submit({ text_answer: textAnswer, duration_seconds: 0, mode: "text" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Submission failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function submit(payload: {
+    storage_path?: string;
+    text_answer?: string;
+    duration_seconds: number;
+    mode: Mode;
+  }) {
+    const res = await fetch("/api/practice", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        question_id: questionId,
+        question_text: questionText,
+        ...payload,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.error ?? "Grading failed");
+    }
+    setFeedback(json.feedback);
+    setTranscript(json.transcript ?? null);
+    router.refresh();
+  }
+
   return (
     <Card>
-      <CardContent className="p-8 text-center">
-        <div className="text-sm text-muted-foreground">Aim for 60-120 seconds.</div>
-        <div className="mt-2 font-mono text-3xl tabular-nums">{formatSeconds(seconds)}</div>
-        <div className="mt-6 flex justify-center">
-          {!recording && !submitting && (
-            <Button size="lg" onClick={start} className="h-16 w-16 rounded-full">
-              <Mic className="h-6 w-6" />
-            </Button>
-          )}
-          {recording && (
-            <Button size="lg" variant="destructive" onClick={stop} className="h-16 w-16 rounded-full">
-              <Square className="h-5 w-5" />
-            </Button>
-          )}
-          {submitting && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Transcribing & grading…
-            </div>
-          )}
+      <CardContent className="p-8">
+        {/* Mode toggle */}
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => {
+              if (recording) return;
+              reset();
+              setMode("audio");
+            }}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm",
+              mode === "audio"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border",
+            )}
+          >
+            <Mic className="h-3.5 w-3.5" /> Audio answer
+          </button>
+          <button
+            onClick={() => {
+              if (recording) return;
+              reset();
+              setMode("text");
+            }}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm",
+              mode === "text"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border",
+            )}
+          >
+            <Type className="h-3.5 w-3.5" /> Type answer
+          </button>
         </div>
+        {category === "system_design" && (
+          <div className="mt-4 rounded-lg bg-secondary/50 p-3 text-center text-xs text-muted-foreground">
+            <Badge variant="outline" className="mr-1">
+              Tip
+            </Badge>
+            System design questions involve diagrams. Use{" "}
+            <strong className="text-foreground">type mode</strong> to lay out your design (you can
+            describe boxes/arrows in text, e.g. <em>&quot;Client → CDN → API gateway → ...&quot;</em>).
+          </div>
+        )}
+
+        {/* AUDIO MODE */}
+        {mode === "audio" && (
+          <div className="mt-6 text-center">
+            <div className="text-sm text-muted-foreground">Aim for 60-120 seconds.</div>
+            <div className="mt-2 font-mono text-3xl tabular-nums">{formatSeconds(seconds)}</div>
+            <div className="mt-6 flex justify-center">
+              {!recording && !submitting && !feedback && (
+                <Button size="lg" onClick={startRecording} className="h-16 w-16 rounded-full">
+                  <Mic className="h-6 w-6" />
+                </Button>
+              )}
+              {recording && (
+                <Button
+                  size="lg"
+                  variant="destructive"
+                  onClick={stopRecording}
+                  className="h-16 w-16 rounded-full"
+                >
+                  <Square className="h-5 w-5" />
+                </Button>
+              )}
+              {submitting && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Transcribing & grading…
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TEXT MODE */}
+        {mode === "text" && (
+          <div className="mt-6">
+            <textarea
+              value={textAnswer}
+              onChange={(e) => setTextAnswer(e.target.value)}
+              placeholder="Sketch your answer here. For system design, describe components, data flow, scaling decisions, and tradeoffs."
+              className="min-h-[260px] w-full rounded-xl border border-input bg-background p-4 text-sm leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              disabled={submitting || !!feedback}
+            />
+            <div className="mt-4 flex justify-end">
+              <Button onClick={submitText} disabled={submitting || !!feedback}>
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                Submit for grading
+              </Button>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="mt-6 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
+
+        {/* FEEDBACK */}
         {feedback && (
-          <div className="mt-8 space-y-4 text-left">
+          <div className="mt-8 space-y-4">
             <div className="rounded-xl border bg-secondary/30 p-4">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Score</div>
               <div className="mt-1 text-3xl font-bold">{feedback.score}/10</div>
@@ -168,15 +287,7 @@ export function PracticeRecorder({ questionId, questionText, userId }: Props) {
               </details>
             )}
             <div>
-              <Button
-                onClick={() => {
-                  setFeedback(null);
-                  setTranscript(null);
-                  setSeconds(0);
-                }}
-              >
-                Try again
-              </Button>
+              <Button onClick={reset}>Try again</Button>
             </div>
           </div>
         )}

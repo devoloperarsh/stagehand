@@ -67,6 +67,7 @@ export default async function PracticeQuestionPage({ params }: { params: { id: s
           questionId={question.id}
           questionText={question.question_text}
           userId={user.id}
+          category={question.category}
         />
       </div>
 

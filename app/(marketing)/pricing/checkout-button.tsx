@@ -23,17 +23,28 @@ export function CheckoutButton({ plan, india, label, highlight }: Props) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  async function safeFetchJson(url: string, body: unknown) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const text = await res.text();
+    let data: { error?: string; [k: string]: unknown } = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { error: text || `Request failed (${res.status})` };
+    }
+    return { res, data };
+  }
+
   async function start() {
     setLoading(true);
     try {
       if (india) {
-        const res = await fetch("/api/billing/razorpay/checkout", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ plan }),
-        });
+        const { res, data } = await safeFetchJson("/api/billing/razorpay/checkout", { plan });
         if (res.status === 401) return router.push(`/login?next=/pricing`);
-        const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Checkout failed");
 
         const rzp = new window.Razorpay({
@@ -49,15 +60,10 @@ export function CheckoutButton({ plan, india, label, highlight }: Props) {
         });
         rzp.open();
       } else {
-        const res = await fetch("/api/billing/stripe/checkout", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ plan }),
-        });
+        const { res, data } = await safeFetchJson("/api/billing/stripe/checkout", { plan });
         if (res.status === 401) return router.push(`/login?next=/pricing`);
-        const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Checkout failed");
-        window.location.href = data.url;
+        window.location.href = data.url as string;
       }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Something went wrong.");

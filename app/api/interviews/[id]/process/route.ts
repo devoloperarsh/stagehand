@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { transcribeFromUrl } from "@/lib/deepgram";
-import { analyzeInterview } from "@/lib/anthropic";
+import { analyzeInterview } from "@/lib/llm";
 import { sendAnalysisReadyEmail } from "@/lib/email";
 import type { InterviewRow } from "@/lib/types";
 

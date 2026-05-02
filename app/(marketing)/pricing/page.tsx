@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, ShieldCheck } from "lucide-react";
 import { headers } from "next/headers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/accordion";
 import { PLANS, isIndianUser } from "@/lib/billing";
 import { CheckoutButton } from "./checkout-button";
+import { createClient } from "@/lib/supabase/server";
 
 const FAQ = [
   {
@@ -32,14 +33,28 @@ const FAQ = [
   },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
   // Country detection: Vercel sets x-vercel-ip-country. Fallback = "US".
   const country = headers().get("x-vercel-ip-country") ?? "US";
   const india = isIndianUser(country);
 
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <>
       <section className="container py-20 text-center">
+        {user && (
+          <div className="mb-6 flex justify-center">
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/dashboard">
+                <ArrowLeft className="h-4 w-4" /> Back to dashboard
+              </Link>
+            </Button>
+          </div>
+        )}
         <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Simple pricing</h1>
         <p className="mt-3 text-lg text-muted-foreground">
           Land your dream job. Free to try, cancel anytime.
@@ -76,9 +91,15 @@ export default function PricingPage() {
                 </ul>
                 <div className="mt-8">
                   {plan.id === "free" ? (
-                    <Button asChild className="w-full" variant="outline">
-                      <Link href="/signup">{plan.cta}</Link>
-                    </Button>
+                    user ? (
+                      <Button asChild className="w-full" variant="outline" disabled>
+                        <span>Current plan</span>
+                      </Button>
+                    ) : (
+                      <Button asChild className="w-full" variant="outline">
+                        <Link href="/signup">{plan.cta}</Link>
+                      </Button>
+                    )
                   ) : (
                     <CheckoutButton
                       plan={plan.id}
