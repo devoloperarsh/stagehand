@@ -1,0 +1,60 @@
+-- Seed practice questions for V1
+-- Run after the initial migration.
+
+insert into public.practice_questions (question_text, category, role_tags, ideal_answer_structure, difficulty) values
+('Tell me about yourself.', 'hr', '{software-engineer,product-manager,designer,data-scientist}', 'Hook (current role + value prop), 2-3 career milestones with metrics, why this role/company.', 'easy'),
+('Why do you want to work at this company?', 'hr', '{software-engineer,product-manager,designer}', 'Specific product/mission resonance, tied to your strengths and goals. Avoid generic praise.', 'easy'),
+('What is your biggest weakness?', 'hr', '{software-engineer,product-manager,designer}', 'Real weakness, concrete steps you took, evidence of progress.', 'easy'),
+('Why are you leaving your current job?', 'hr', '{software-engineer,product-manager,designer}', 'Forward-looking framing. Avoid trash-talking. Tie to growth.', 'easy'),
+('Where do you see yourself in 5 years?', 'hr', '{software-engineer,product-manager,designer}', 'Skills you want to build, kind of impact, alignment with role progression.', 'easy'),
+
+('Tell me about a time you failed.', 'behavioral', '{software-engineer,product-manager,designer}', 'STAR. Genuine failure, ownership, what you learned, evidence applied later.', 'medium'),
+('Tell me about a conflict with a coworker.', 'behavioral', '{software-engineer,product-manager,designer}', 'STAR. Stakes, perspective-taking, action you took, outcome, relationship after.', 'medium'),
+('Describe a time you had to make a decision with incomplete information.', 'behavioral', '{software-engineer,product-manager}', 'Context, options, decision framework, action, result with metrics.', 'medium'),
+('Tell me about a project you''re most proud of.', 'behavioral', '{software-engineer,product-manager,designer}', 'Why it mattered, your specific contribution, technical/strategic challenges, measurable impact.', 'easy'),
+('Describe a time you had to give difficult feedback.', 'behavioral', '{software-engineer,product-manager}', 'Setup, what made it difficult, how you delivered, outcome, what you learned.', 'medium'),
+('Tell me about a time you went above and beyond.', 'behavioral', '{software-engineer,product-manager,designer}', 'STAR. Above what baseline, motivation, action, impact.', 'easy'),
+('Describe a time you missed a deadline.', 'behavioral', '{software-engineer,product-manager}', 'Honest cause, communication you did, recovery plan, prevention applied later.', 'medium'),
+('Tell me about a time you disagreed with your manager.', 'behavioral', '{software-engineer,product-manager}', 'Issue, how you raised it, data/reasoning used, outcome, lessons.', 'medium'),
+('Describe a time you led without authority.', 'behavioral', '{software-engineer,product-manager,designer}', 'Influence techniques, alignment built, what shipped, what changed.', 'hard'),
+('Tell me about a time you changed your mind.', 'behavioral', '{software-engineer,product-manager,designer}', 'Original belief, what data/feedback shifted you, what you did differently.', 'medium'),
+
+('Implement a function that reverses a linked list.', 'technical', '{software-engineer}', 'Clarify single/doubly linked, walk through pointer manipulation, iterative + recursive, complexity.', 'easy'),
+('Explain how a hash table works under the hood.', 'technical', '{software-engineer}', 'Hashing, collision resolution (chaining, open addressing), load factor, resize cost.', 'medium'),
+('What is the difference between TCP and UDP?', 'technical', '{software-engineer}', 'Reliability, ordering, connection setup, headers, when to use each with examples.', 'easy'),
+('Walk me through what happens when you type a URL into the browser.', 'technical', '{software-engineer}', 'DNS, TCP/TLS, HTTP request, server, response, render pipeline. Cover at least 6 layers.', 'medium'),
+('How does HTTPS work?', 'technical', '{software-engineer}', 'TLS handshake, certs, asymmetric -> symmetric key exchange, integrity, trust chain.', 'medium'),
+('Explain database indexes.', 'technical', '{software-engineer,data-scientist}', 'B-tree vs hash, when indexes help, write cost, composite/covering indexes, EXPLAIN.', 'medium'),
+('How would you find the kth largest element in an array?', 'technical', '{software-engineer}', 'Sort vs heap vs quickselect, complexity tradeoffs, code one approach.', 'medium'),
+('Detect a cycle in a linked list.', 'technical', '{software-engineer}', 'Floyd''s tortoise and hare, why it works, find cycle start, complexity.', 'medium'),
+('Explain the difference between processes and threads.', 'technical', '{software-engineer}', 'Memory isolation, scheduling, IPC, context switch cost, when to use each.', 'medium'),
+('What is the CAP theorem?', 'technical', '{software-engineer}', 'Consistency, availability, partition tolerance. Tradeoffs in real systems with examples.', 'medium'),
+('How would you debug a slow API endpoint in production?', 'technical', '{software-engineer}', 'Reproduce, metrics, traces, db query plans, hypothesis-driven, fix + verify.', 'medium'),
+('Explain CORS.', 'technical', '{software-engineer}', 'Same-origin policy, preflight, headers, common misconfigurations.', 'easy'),
+('Describe how garbage collection works.', 'technical', '{software-engineer}', 'Mark-and-sweep, generational, reference counting tradeoffs, pause times.', 'hard'),
+('What is eventual consistency?', 'technical', '{software-engineer}', 'When acceptable, replication models, conflict resolution, user-visible effects.', 'medium'),
+('Implement an LRU cache.', 'technical', '{software-engineer}', 'Hashmap + doubly linked list, O(1) get/put, eviction policy.', 'hard'),
+
+('Design a URL shortener.', 'system_design', '{software-engineer}', 'Functional reqs, scale estimate, ID generation (base62), DB schema, cache, redirect path, analytics.', 'medium'),
+('Design Twitter''s home timeline.', 'system_design', '{software-engineer}', 'Fan-out on write vs read, hybrid for celebrities, caching, ranking, edge cases.', 'hard'),
+('Design a chat application like WhatsApp.', 'system_design', '{software-engineer}', 'Connection model, message delivery, storage, read receipts, group chat scaling, e2e encryption.', 'hard'),
+('Design a rate limiter.', 'system_design', '{software-engineer}', 'Algorithms (token bucket, sliding window), distributed counters, per-user vs per-IP, eventual consistency.', 'medium'),
+('Design Instagram.', 'system_design', '{software-engineer}', 'Photo upload, feed generation, follow graph, storage, CDN, search.', 'hard'),
+('Design a parking lot system (OOD).', 'system_design', '{software-engineer}', 'Classes, relationships, spot allocation, payment, edge cases. Clean OO design.', 'medium'),
+('Design Google Drive / Dropbox.', 'system_design', '{software-engineer}', 'Sync protocol, conflict resolution, chunking, dedup, sharing model, offline behavior.', 'hard'),
+('Design a notification system.', 'system_design', '{software-engineer}', 'Queues, channel routing, retries, priority, throttling, user preferences.', 'medium'),
+('Design Uber''s matching system.', 'system_design', '{software-engineer}', 'Geo-indexing, driver-rider matching, ETA, surge, consistency under failures.', 'hard'),
+('Design a metrics / monitoring service.', 'system_design', '{software-engineer}', 'Ingestion, time-series storage, downsampling, querying, alerting, scale.', 'hard'),
+
+('How would you launch a new feature with limited user research?', 'behavioral', '{product-manager}', 'Hypotheses, MVP scope, success metrics, kill criteria, learning plan.', 'medium'),
+('How do you prioritize a roadmap with conflicting stakeholder demands?', 'behavioral', '{product-manager}', 'Framework (RICE/impact-effort), strategy alignment, transparent communication, examples.', 'medium'),
+('Tell me about a product decision you got wrong.', 'behavioral', '{product-manager}', 'Decision, what went wrong, signals you missed, learning, evidence applied later.', 'medium'),
+('How do you measure the success of a feature?', 'behavioral', '{product-manager}', 'North star + guardrails, leading vs lagging, instrumentation, counter-metrics.', 'medium'),
+('Critique a product you use daily.', 'behavioral', '{product-manager,designer}', 'User+goal, friction, hypotheses for improvement, prioritization.', 'medium'),
+
+('Walk me through your design process.', 'behavioral', '{designer}', 'Discovery, framing, exploration, validation, handoff, examples per stage.', 'easy'),
+('Tell me about a time you defended a design decision.', 'behavioral', '{designer}', 'Stakes, evidence used, communication, outcome, what you''d do differently.', 'medium'),
+('How do you balance speed with craft?', 'behavioral', '{designer,software-engineer}', 'Context-aware, where craft matters most, examples of each tradeoff.', 'medium'),
+
+('Walk me through a recent analysis you did and the impact.', 'behavioral', '{data-scientist}', 'Question, data, methods, key insight, decision driven, business impact with metric.', 'medium'),
+('Explain p-values to a non-technical stakeholder.', 'technical', '{data-scientist}', 'Plain language, what it does and does NOT mean, alternatives, common mistakes.', 'medium');
